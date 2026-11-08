@@ -1,45 +1,48 @@
-# Day Weather for Tidbyt
+# Tidbyt apps
 
-A day-of weather app for the 64×32 Tidbyt. It shows three rows:
+Custom [Pixlet](https://github.com/tidbyt/pixlet) apps for a stock Tidbyt. GitHub Actions renders each app on a schedule and pushes it to the device, so no home server is needed.
 
-1. **Now:** a condition icon, the current temperature, and today's high and low.
-2. **Headline:** the one thing worth knowing for the rest of the day. For example, `Rain ~2p 70%`, `Rain til 4p`, `Snow ~7a 62%`, `Maybe rain 30%`, or `Dry, dusk 5:04`.
-3. **Next 16 hours:** one column per hour. Blue bars show the chance of rain (light bars mean snow), and the orange line shows the temperature trend.
+| App | Folder | Slot ID | Refresh | Data |
+|---|---|---|---|---|
+| Day Weather | `apps/weather` | `dayweather` | every 10 min | [Open-Meteo](https://open-meteo.com) (no key) |
+| Coming Soon | `apps/movies` | `movies` | daily | [TMDB](https://www.themoviedb.org) (free key) |
 
-The data comes from [Open-Meteo](https://open-meteo.com), which is free and needs no API key. The app defaults to Friendship, Pittsburgh, in °F.
+Each app has its own folder because Pixlet loads every `.star` file in a folder as one app.
 
-## Preview
+## Day Weather
 
-```bash
-pixlet serve weather.star
-```
+The screen has three rows:
 
-Open the URL it prints. The config panel lets you change the location and switch to Celsius.
+1. A condition icon, the current temperature, and today's high and low.
+2. A headline for the rest of the day, such as `Rain ~2p 70%` or `Dry, dusk 5:04`.
+3. The next 16 hours: rain-chance bars with a temperature line on top.
 
-## Push to your Tidbyt
+It defaults to Friendship, Pittsburgh, in °F.
 
-```bash
-export TIDBYT_API_TOKEN=...   # Tidbyt app > device settings > General > Get API Key
-export TIDBYT_DEVICE_ID=...
-chmod +x push.sh && ./push.sh
-```
+## Coming Soon
 
-Pushed images don't update themselves. To keep the data fresh, schedule the script on an always-on machine:
+This app shows the most-anticipated theatrical releases. It picks the top 5 films by TMDB popularity among those with a US theatrical or limited release between 6 days ago and 6 weeks from now. It then shows them in release order, about 3 seconds each, with the poster, title, US release date, and `OUT NOW`, `Tomorrow`, or `in N days`.
 
-```cron
-*/10 * * * * TIDBYT_API_TOKEN=... TIDBYT_DEVICE_ID=... /path/to/tidbyt-weather/push.sh >/dev/null 2>&1
-```
+## Secrets (repo Settings → Secrets and variables → Actions)
 
-`--installation-id dayweather` keeps the app as a single slot in the rotation, and every push replaces it. `--background` updates the slot without jumping the display to it.
+- `TIDBYT_DEVICE_ID`, `TIDBYT_API_TOKEN`: from the Tidbyt app (device settings → General → Get API Key)
+- `TMDB_API_KEY`: the TMDB v3 API key, from themoviedb.org → Settings → API
 
-To remove the app from the rotation:
+## Local use
 
 ```bash
-pixlet delete --api-token "$TIDBYT_API_TOKEN" "$TIDBYT_DEVICE_ID" dayweather
+pixlet serve apps/weather/weather.star
+pixlet serve apps/movies/movies.star          # enter the TMDB key in the config panel
+./push.sh apps/movies/movies.star movies api_key="$TMDB_API_KEY"
 ```
 
-## Other locations
+To remove a slot:
 
 ```bash
-TIDBYT_LOCATION='{"lat":"40.4406","lng":"-79.9959","timezone":"America/New_York"}' ./push.sh
+pixlet delete --api-token "$TIDBYT_API_TOKEN" "$TIDBYT_DEVICE_ID" <slot-id>
 ```
+
+## Notes
+
+- Scheduled workflows are paused after 60 days with no commits. Re-enable them in the Actions tab.
+- GitHub often starts scheduled runs a few minutes late.
